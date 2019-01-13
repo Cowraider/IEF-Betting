@@ -16,7 +16,10 @@ contract IEF_Betting is usingOraclize {
 	...
 	oraclize_setProof(proofType_Android);
 	bytes32 queryId = oraclize_newRandomDSQuery(0, 1, 200000); //delay = 0, bytes = 1, gas = 2000000
-	...
-	randomNumber = -1;
+	
+	if(randomNumber != -1)
+		betting[id].randomResult = randomNumber;
+	else
+		betting[id].randomResult = int8(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))) % 2);
 	...
 }
