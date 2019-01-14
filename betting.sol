@@ -1,5 +1,6 @@
 pragma solidity ^0.5.2;
 
+
 contract IEF_Betting {
     
     struct PlayerBet {
@@ -26,6 +27,21 @@ contract IEF_Betting {
     
     constructor() public {
         betId = 0;
+    }
+    
+    function checkLastBetIdForOwner() view public returns (uint256 lastBetId) {
+        
+        
+        for(uint256 x = betId; x > 0; x--) {
+            if(betting[x].betOwner == msg.sender){
+                
+                lastBetId = x;
+                return lastBetId;
+            }
+            
+        }
+        
+       return lastBetId;
     }
     
     function createBet(uint256 ethAmount, uint256 minHoursOpen, uint256 maxHoursOpen) public returns (uint256) {
@@ -113,6 +129,8 @@ contract IEF_Betting {
         return true;
     }
     
+    
+
     
     // TODO: create a timeout that automatically closes the bets
 }
