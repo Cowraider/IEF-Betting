@@ -3,13 +3,14 @@ pragma solidity ^0.5.2;
 
 contract IEF_Betting {
     
+    
     struct PlayerBet {
         uint8 bet;
         uint256 timestamp;
     }
     
     struct Bet {
-        address payable betOwner;
+        address betOwner;
         mapping(address => PlayerBet) bets;
         address payable [] players; 
         uint256 ETHAmount;
@@ -22,14 +23,33 @@ contract IEF_Betting {
         uint peopleOn1;
     }
     
-    mapping(uint256 => Bet) public betting;
-    uint256 public betId;
+     mapping(uint256 => Bet) public betting;
+     uint256 public betId;
+    
+    address payable [] public betOwners;
+    
+    modifier onlyOwner {
+        for(uint index = 0; index < betOwners.length; index++) {
+            if (msg.sender == betOwners[index]){
+                   _;
+                return;
+              }
+        }
+        revert(); 
+    }
+    
+    function addOwners(address payable user) onlyOwner public {
+        betOwners.push(user);
+    }
+    
+   
     
     constructor() public {
+        betOwners.push(msg.sender);
         betId = 0;
     }
     
-    function checkLastBetIdForOwner() view public returns (uint256 lastBetId) {
+    function checkLastBetIdForOwner() onlyOwner view public returns (uint256 lastBetId) {
         
         
         for(uint256 x = betId; x > 0; x--) {
@@ -44,7 +64,7 @@ contract IEF_Betting {
        return lastBetId;
     }
     
-    function createBet(uint256 ethAmount, uint256 minHoursOpen, uint256 maxHoursOpen) public returns (uint256) {
+    function createBet(uint256 ethAmount, uint256 minHoursOpen, uint256 maxHoursOpen) onlyOwner public returns (uint256) {
         require(minHoursOpen < maxHoursOpen);
         
         betId++;
@@ -97,11 +117,10 @@ contract IEF_Betting {
         return true; 
     }
     
-    function closeBet(uint256 id) public returns (bool) {
+    function closeBet(uint256 id) onlyOwner public returns (bool) {
         require(betting[id].isOpen);
         // bet cannot be closed before the earliestClosage
         require(now > betting[id].earliestClosage);
-        require(betting[id].betOwner == msg.sender);
         
         betting[id].isOpen = false;
         
@@ -116,7 +135,13 @@ contract IEF_Betting {
         totalAmount -= ownerPercentage;
         uint no_winners = betting[id].randomResult == 0 ? betting[id].peopleOn0 : betting[id].peopleOn1;
         
-        betting[id].betOwner.transfer(ownerPercentage);
+        //to divide the profit among all owners
+        ownerPercentage = ownerPercentage / betOwners.length;
+        for(uint index = 0; index < betOwners.length; index++) {
+             betOwners[index].transfer(ownerPercentage);
+        }
+        
+       
         
         for(uint index = 0; index < betting[id].players.length; index++) {
             address payable current = betting[id].players[index];
@@ -132,5 +157,5 @@ contract IEF_Betting {
     
 
     
-    // TODO: create a timeout that automatically closes the bets
+    // PD: Perfect timeout and random algorithm needs use a Oracle
 }
